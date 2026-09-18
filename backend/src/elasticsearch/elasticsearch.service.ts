@@ -1,4 +1,66 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { Client } from '@elastic/elasticsearch';
+
+const INDEX_NAME = 'chunks';
+const EMBEDDING_DIMS = 3072;
 
 @Injectable()
-export class ElasticsearchService {}
+export class ElasticsearchService implements OnModuleInit {
+  private readonly client: Client;
+
+  constructor(private readonly configService: ConfigService) {
+    this.client = new Client({
+      node: this.configService.get<string>('ELASTICSEARCH_URL'),
+    });
+  }
+
+  async onModuleInit() {
+    const exists = await this.client.indices.exists({ index: INDEX_NAME });
+    if (!exists) {
+      await this.client.indices.create({
+        index: INDEX_NAME,
+        mappings: {
+          properties: {
+            conversationId: { type: 'keyword' },
+            fileId: { type: 'keyword' },
+            fileName: { type: 'keyword' },
+            chunkIndex: { type: 'integer' },
+            text: { type: 'text' },
+            embedding: {
+              type: 'dense_vector',
+              dims: EMBEDDING_DIMS,
+              index: true,
+              similarity: 'cosine',
+            },
+          },
+        },
+      });
+    }
+  }
+
+  async indexChunks(
+    conversationId: string,
+    fileId: string,
+    fileName: string,
+    chunks: string[],
+    embeddings: number[][],
+  ) {
+    const operations = chunks.flatMap((text, i) => [
+      { index: { _index: INDEX_NAME } },
+      {
+        conversationId,
+        fileId,
+        fileName,
+        chunkIndex: i,
+        text,
+        embedding: embeddings[i],
+      },
+    ]);
+
+    const result = await this.client.bulk({ refresh: true, operations });
+    if (result.errors) {
+      throw new Error('Elasticsearch bulk indexing encountered errors');
+    }
+  }
+}
