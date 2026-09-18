@@ -8,6 +8,7 @@ import { RedisModule } from './redis/redis.module';
 import { ConversationsModule } from './conversations/conversations.module';
 import { ChatModule } from './chat/chat.module';
 import { FilesModule } from './files/files.module';
+import { EmbeddingModule } from './embedding/embedding.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { FilesModule } from './files/files.module';
     FilesModule,
     GeminiModule,
     RedisModule,
+    EmbeddingModule,
   ],
   controllers: [AppController],
   providers: [AppService],

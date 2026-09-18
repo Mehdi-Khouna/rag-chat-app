@@ -1,0 +1,26 @@
+{
+  "name": "rag-chat-app",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+  "dev": "concurrently -n backend,frontend -c blue,green \"npm run start:dev --prefix backend\" \"npm start --prefix frontend\"",
+  "infra:up": "docker compose -f infra/docker-compose.yml up -d",
+  "infra:down": "docker compose -f infra/docker-compose.yml down"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Mehdi-Khouna/rag-chat-app.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Mehdi-Khouna/rag-chat-app/issues"
+  },
+  "homepage": "https://github.com/Mehdi-Khouna/rag-chat-app#readme",
+  "devDependencies": {
+    "concurrently": "^10.0.5"
+  }
+}
