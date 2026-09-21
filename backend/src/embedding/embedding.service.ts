@@ -11,23 +11,35 @@ export class EmbeddingService {
   ) {}
 
   async embedChunks(chunks: string[]): Promise<number[][]> {
-    const results: number[][] = new Array<number[]>(chunks.length);
+    return this.embedTexts(chunks, 'RETRIEVAL_DOCUMENT');
+  }
+
+  async embedQuery(query: string): Promise<number[]> {
+    const [vector] = await this.embedTexts([query], 'RETRIEVAL_QUERY');
+    return vector;
+  }
+
+  private async embedTexts(
+    texts: string[],
+    taskType: 'RETRIEVAL_DOCUMENT' | 'RETRIEVAL_QUERY',
+  ): Promise<number[][]> {
+    const results: number[][] = new Array<number[]>(texts.length);
     const toEmbed: { index: number; text: string; hash: string }[] = [];
 
-    for (let i = 0; i < chunks.length; i++) {
-      const hash = this.hash(chunks[i]);
+    for (let i = 0; i < texts.length; i++) {
+      const hash = this.hash(texts[i]);
       const cached = await this.redisService.client.get(`embed:${hash}`);
       if (cached) {
         results[i] = JSON.parse(cached) as number[];
       } else {
-        toEmbed.push({ index: i, text: chunks[i], hash });
+        toEmbed.push({ index: i, text: texts[i], hash });
       }
     }
 
     if (toEmbed.length > 0) {
       const vectors = await this.geminiService.embedTexts(
         toEmbed.map((c) => c.text),
-        'RETRIEVAL_DOCUMENT',
+        taskType,
       );
       await Promise.all(
         toEmbed.map(async (c, j) => {

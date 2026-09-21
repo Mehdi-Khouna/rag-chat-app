@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import 'multer';
 
 @Injectable()
 export class ChunkingService {
@@ -7,6 +6,23 @@ export class ChunkingService {
   private readonly overlap = 200;
 
   chunkText(text: string): string[] {
+    const paragraphs = text
+      .split(/\r?\n\s*\r?\n/)
+      .map((p) => p.trim())
+      .filter((p) => p.length > 0);
+
+    const chunks: string[] = [];
+    for (const paragraph of paragraphs) {
+      if (paragraph.length <= this.chunkSize) {
+        chunks.push(paragraph);
+      } else {
+        chunks.push(...this.slidingWindow(paragraph));
+      }
+    }
+    return chunks;
+  }
+
+  private slidingWindow(text: string): string[] {
     const chunks: string[] = [];
     let start = 0;
     while (start < text.length) {
