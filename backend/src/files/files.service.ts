@@ -4,6 +4,7 @@ import { ChunkingService } from './chunking.service';
 import { ExtractionService } from './extraction.service';
 import { EmbeddingService } from '../embedding/embedding.service';
 import { ElasticsearchService } from '../elasticsearch/elasticsearch.service';
+import { ConversationsService } from 'src/conversations/conversations.service';
 
 @Injectable()
 export class FilesService {
@@ -12,9 +13,11 @@ export class FilesService {
     private readonly chunkingService: ChunkingService,
     private readonly embeddingService: EmbeddingService,
     private readonly elasticsearchService: ElasticsearchService,
+    private readonly conversationsService: ConversationsService,
   ) {}
 
   async processFiles(conversationId: string, files: Express.Multer.File[]) {
+    await this.conversationsService.assertExists(conversationId);
     const results = await Promise.all(
       files.map(async (file) => {
         const fileId = randomUUID();
@@ -35,6 +38,7 @@ export class FilesService {
         };
       }),
     );
+    await this.conversationsService.touch(conversationId);
     return results;
   }
 }

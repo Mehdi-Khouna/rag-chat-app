@@ -5,9 +5,10 @@ import { ChunkingService } from './chunking.service';
 import { ExtractionService } from './extraction.service';
 import { EmbeddingModule } from 'src/embedding/embedding.module';
 import { ElasticsearchModule } from 'src/elasticsearch/elasticsearch.module';
+import { ConversationsModule } from 'src/conversations/conversations.module';
 
 @Module({
-  imports: [EmbeddingModule, ElasticsearchModule],
+  imports: [EmbeddingModule, ElasticsearchModule, ConversationsModule],
   controllers: [FilesController],
   providers: [FilesService, ChunkingService, ExtractionService],
 })
