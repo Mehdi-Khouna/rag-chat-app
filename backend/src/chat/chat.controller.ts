@@ -31,6 +31,31 @@ export class ChatController {
     return { status: 'ok' };
   }
 
+  @Post('ask')
+  @ApiOperation({
+    summary: 'Ask a question and get an AI-generated answer using RAG',
+  })
+  @ApiParam({ name: 'conversationId', description: 'ID of the conversation' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        query: {
+          type: 'string',
+          example: 'What role does the rainforest play in climate regulation?',
+        },
+      },
+      required: ['query'],
+    },
+  })
+  async ask(
+    @Param('conversationId') conversationId: string,
+    @Body('query') query: string,
+  ) {
+    const answer = await this.chatService.ask(conversationId, query);
+    return { answer };
+  }
+
   @Get()
   @ApiOperation({ summary: 'Get message history for a conversation' })
   @ApiParam({ name: 'conversationId', description: 'ID of the conversation' })

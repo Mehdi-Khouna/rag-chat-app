@@ -33,4 +33,15 @@ export class GeminiService {
       return e.values;
     });
   }
+
+  async generateAnswer(prompt: string): Promise<string> {
+    const response = await this.ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: prompt,
+    });
+    if (!response.text) {
+      throw new Error('Gemini generation returned no text');
+    }
+    return response.text;
+  }
 }
