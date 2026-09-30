@@ -29,14 +29,14 @@ color-scheme: light;
 /* Pastel sage accent (hue 145 — swap this angle to retheme) */
 --primary: oklch(0.72 0.11 145);
 --primary-foreground: oklch(0.26 0.06 145);
---secondary: oklch(0.93 0.02 145);
+--secondary: oklch(0.88 0.03 145);
 --secondary-foreground: oklch(0.3 0.02 145);
 --accent: oklch(0.9 0.025 145);
 --accent-foreground: oklch(0.28 0.02 145);
 
 /* Supporting neutrals */
---muted: oklch(0.94 0.01 100);
---muted-foreground: oklch(0.48 0.01 60);
+--muted: oklch(0.91 0.018 145);
+--muted-foreground: oklch(0.45 0.015 145);
 --border: oklch(0.88 0.012 130);
 --input: oklch(0.88 0.012 130);
 --ring: oklch(0.72 0.11 145);
