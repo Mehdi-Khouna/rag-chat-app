@@ -1,8 +1,10 @@
 @layer theme, base, components, utilities;
+@import '@angular/cdk/overlay-prebuilt.css';
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/preflight.css" layer(base);
 @import "tailwindcss/utilities.css";
 @import "@spartan-ng/brain/hlm-tailwind-preset.css";
+@source "../libs/ui";
 
 :root {
 color-scheme: light;
@@ -89,6 +91,7 @@ color-scheme: dark;
 --sidebar-border: oklch(1 0 0 / 10%);
 --sidebar-ring: oklch(0.553 0.013 58.071);
 }
+
 
 @layer base {
 * {
