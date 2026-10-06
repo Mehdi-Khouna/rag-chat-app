@@ -1,0 +1,49 @@
+<div hlmCard class="p-4 flex flex-col gap-3">
+  @if (uploadedFiles().length === 0) {
+    <label
+      class="border-2 border-dashed rounded-xl p-6 flex flex-col items-center gap-2 cursor-pointer transition-colors"
+      [class.border-border]="!isDraggingOver()"
+      [class.hover:bg-muted]="!isDraggingOver()"
+      [class.border-primary]="isDraggingOver()"
+      [class.bg-accent]="isDraggingOver()"
+      (dragover)="onDragOver($event)"
+      (dragleave)="onDragLeave()"
+      (drop)="onDrop($event)"
+    >
+      <span class="text-sm text-muted-foreground">
+        Click to upload a file, or drag and drop
+      </span>
+      <input
+        type="file"
+        multiple
+        class="hidden"
+        [disabled]="isUploading()"
+        (change)="onFileInputChange($event)"
+      />
+    </label>
+  } @else {
+    <div class="flex flex-col gap-2">
+      @for (file of uploadedFiles(); track file.fileId) {
+        <div class="flex items-center justify-between text-sm">
+          <span>{{ file.fileName }}</span>
+          <span class="text-muted-foreground">{{ file.chunkCount }} chunks</span>
+        </div>
+      }
+    </div>
+    <button hlmBtn variant="outline" size="sm" type="button" [disabled]="isUploading()" (click)="triggerAddMore()">
+      Add more files
+    </button>
+    <input
+      #addMoreInput
+      type="file"
+      multiple
+      class="hidden"
+      [disabled]="isUploading()"
+      (change)="onFileInputChange($event)"
+    />
+  }
+
+  @if (isUploading()) {
+    <p class="text-sm text-muted-foreground">Uploading...</p>
+  }
+</div>
