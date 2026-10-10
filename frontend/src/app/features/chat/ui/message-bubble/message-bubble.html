@@ -1,0 +1,15 @@
+<div class="flex gap-3" [class.flex-row-reverse]="isUser()">
+  <hlm-avatar size="sm">
+    <span hlmAvatarFallback>{{ isUser() ? 'U' : 'AI' }}</span>
+  </hlm-avatar>
+
+  <div
+    class="rounded-2xl px-4 py-2 max-w-[75%] text-sm"
+    [class.bg-primary]="isUser()"
+    [class.text-primary-foreground]="isUser()"
+    [class.bg-muted]="!isUser()"
+    [class.text-foreground]="!isUser()"
+  >
+    {{ message().content }}
+  </div>
+</div>
