@@ -1,0 +1,7 @@
+<ng-scrollbar hlm #scrollbar="ngScrollbar" class="h-full">
+  <div class="flex flex-col gap-4 p-4">
+    @for (msg of messages(); track msg.timestamp) {
+      <app-message-bubble [message]="msg" />
+    }
+  </div>
+</ng-scrollbar>
