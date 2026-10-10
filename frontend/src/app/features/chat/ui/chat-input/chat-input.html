@@ -1,0 +1,21 @@
+<div class="relative rounded-xl border border-input bg-transparent focus-within:border-ring focus-within:ring-ring/50 focus-within:ring-3 transition-colors">
+  <textarea
+    hlmTextarea
+    class="border-0 shadow-none focus-visible:ring-0 bg-transparent pr-12 max-h-40 resize-none"
+    placeholder="Ask a question about your uploaded files..."
+    [value]="draft()"
+    (input)="draft.set($any($event.target).value)"
+    (keydown)="onKeydown($event)"
+    [disabled]="isBusy()"
+  ></textarea>
+
+  <button
+    hlmBtn
+    size="icon-sm"
+    class="absolute bottom-2 right-2"
+    (click)="submit()"
+    [disabled]="isBusy() || !draft().trim()"
+  >
+    →
+  </button>
+</div>
