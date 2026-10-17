@@ -3,5 +3,8 @@
     @for (msg of messages(); track msg.timestamp) {
       <app-message-bubble [message]="msg" />
     }
+    @if (isThinking()) {
+      <app-typing-indicator />
+    }
   </div>
 </ng-scrollbar>

@@ -1,13 +1,12 @@
-import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { ChatShell } from './features/chat/ui/chat-shell/chat-shell';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet],
+  imports: [RouterOutlet, ChatShell],
   templateUrl: './app.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './app.css'
 })
-export class App {
-  protected readonly title = signal('frontend');
-}
+export class App {}
