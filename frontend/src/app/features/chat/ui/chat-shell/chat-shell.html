@@ -1,0 +1,40 @@
+<div class="h-screen flex flex-col items-center p-4">
+  <div class="w-full max-w-2xl h-full flex flex-col gap-4">
+    <header class="flex items-center justify-between py-2">
+      <h1 class="text-lg font-semibold">RAG Chat</h1>
+      @if (store.hasConversation()) {
+        <button hlmBtn variant="outline" size="sm" (click)="store.startConversation()">
+          New conversation
+        </button>
+      }
+    </header>
+
+    @if (!store.hasConversation()) {
+      <div class="flex-1 flex flex-col items-center justify-center gap-4">
+        <p class="text-muted-foreground text-sm">
+          Start a conversation to upload a file and ask questions about it.
+        </p>
+        <button hlmBtn (click)="store.startConversation()" [disabled]="store.isStarting()">
+          Start conversation
+        </button>
+      </div>
+    } @else {
+      <app-file-upload
+        [uploadedFiles]="store.uploadedFiles()"
+        [isUploading]="store.isUploading()"
+        (filesSelected)="onFilesSelected($event)"
+      />
+
+      <app-message-list
+        [messages]="store.messages()"
+        [isThinking]="store.isAsking()"
+        class="flex-1 min-h-0 block"
+      />
+      @if (store.error()) {
+        <p class="text-destructive text-sm">{{ store.error() }}</p>
+      }
+
+      <app-chat-input [isBusy]="store.isAsking()" (querySubmitted)="onQuerySubmitted($event)" />
+    }
+  </div>
+</div>
