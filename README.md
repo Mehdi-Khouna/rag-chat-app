@@ -13,10 +13,15 @@ Built as a learning project to get hands-on with RAG mechanics, Elasticsearch, a
 - **Redis 7** — embedding cache, answer cache, and conversation/session state (all with TTL-based expiry)
 - **Google Gemini API** (`@google/genai`) — `gemini-embedding-001` for embeddings, `gemini-3-flash-preview` for answer generation
 - **unpdf** — PDF text extraction
+- **Multer** — multipart file uploads
 - **Swagger** (`@nestjs/swagger`) — interactive API docs at `/api`
 
 **Frontend**
-- **Angular 20** (zoneless, standalone components, SCSS)
+- **Angular 22** — zoneless change detection, standalone components, signals
+- **Tailwind CSS v4** — utility styling (the project uses plain CSS rather than SCSS, because Tailwind v4 replaces the Sass preprocessing step)
+- **spartan-ng** (MIT) — accessible component primitives in the shadcn/ui style, generated into the repo (`nova` style)
+- **ngx-scrollbar** — custom scroll area used by the message list
+- **Inter** (Google Fonts) — typography
 
 **Infrastructure**
 - **Docker Compose** — runs Elasticsearch and Redis locally (backend/frontend run natively via `npm run dev`, not containerized, for simpler local hot-reload)
@@ -52,18 +57,19 @@ Built as a learning project to get hands-on with RAG mechanics, Elasticsearch, a
 
 ## Repo Structure
 
+```
 rag-chat-app/
-├── backend/ # NestJS API
-├── frontend/ # Angular app
-├── infra/ # docker-compose.yml (Elasticsearch + Redis)
-└── package.json # root dev scripts (see below)
-
+├── backend/      # NestJS API
+├── frontend/     # Angular app
+├── infra/        # docker-compose.yml (Elasticsearch + Redis)
+└── package.json  # root dev scripts: dev, infra:up, infra:down
+```
 
 ## Setup
 
 **Prerequisites:** Node 22+, Docker, a Gemini API key ([aistudio.google.com/apikey](https://aistudio.google.com/apikey)).
 
-1. Clone the repo, install root dependencies:
+1. Clone the repo and install root dependencies (this provides the `concurrently` dev runner):
 ```bash
    npm install
 ```
@@ -72,8 +78,13 @@ rag-chat-app/
    npm install --prefix backend
    npm install --prefix frontend
 ```
-3. Copy `backend/.env.example` to `backend/.env` (if present) or create `backend/.env`:
-
+3. Create `backend/.env` by copying `backend/.env.example` and filling in your Gemini key:
+```
+   ELASTICSEARCH_URL=http://localhost:9200
+   REDIS_HOST=localhost
+   REDIS_PORT=6379
+   GEMINI_API_KEY=your_key_here
+```
 4. Start Elasticsearch and Redis:
 ```bash
    npm run infra:up
@@ -82,7 +93,11 @@ rag-chat-app/
 ```bash
    npm run dev
 ```
-6. Backend API docs (Swagger): `http://localhost:3000/api`
+6. Open the app at `http://localhost:4200`. Backend API docs (Swagger) are at `http://localhost:3000/api`.
+
+Notes:
+- The backend only accepts cross-origin requests from `http://localhost:4200` (CORS is configured in `backend/src/main.ts`). If you serve the frontend from a different origin, update it there.
+- The frontend reads the backend URL from `frontend/src/environments/` (`apiUrl`, `http://localhost:3000` by default).
 
 ## API Overview
 
@@ -91,6 +106,7 @@ rag-chat-app/
 | `POST /conversations` | Start a new conversation |
 | `POST /conversations/:id/files` | Upload one or more files (PDF/text) to a conversation |
 | `POST /conversations/:id/search` | (Test/debug) Raw retrieval — returns top-K chunks for a query |
+| `POST /conversations/:id/messages` | (Test/debug) Append a raw message to the history |
 | `POST /conversations/:id/messages/ask` | Ask a question, get an AI-generated answer (full RAG flow) |
 | `GET /conversations/:id/messages` | Get conversation message history |
 
@@ -98,4 +114,83 @@ Full interactive documentation is available via Swagger at `/api` once the backe
 
 ## Frontend
 
-*(to be filled in as the Angular UI is built)*
+A single-page chat UI built around one active conversation at a time: start a conversation, upload files, ask questions, read answers. It was built as a real part of the project, with the same attention to structure as the backend.
+
+### Structure
+
+Code is organized by feature, and each feature separates **data-access** (stateful logic) from **ui** (presentational components):
+
+```
+frontend/
+├── libs/ui/                         # spartan-ng components (nova style), generated into the repo
+├── src/
+│   ├── app/
+│   │   ├── core/
+│   │   │   ├── models/
+│   │   │   │   └── chat.models.ts   # types mirroring the backend's response shapes
+│   │   │   └── services/api/
+│   │   │       ├── conversations-api.service.ts
+│   │   │       ├── files-api.service.ts
+│   │   │       └── chat-api.service.ts
+│   │   └── features/chat/
+│   │       ├── data-access/
+│   │       │   └── chat-store.service.ts
+│   │       └── ui/
+│   │           ├── chat-shell/          # page layout, connects the store to the pieces below
+│   │           ├── file-upload/
+│   │           ├── message-list/
+│   │           ├── message-bubble/
+│   │           ├── chat-input/
+│   │           └── typing-indicator/
+│   ├── environments/                # apiUrl per build configuration
+│   ├── styles.css                   # Tailwind v4 imports, theme tokens, font
+│   └── index.html
+├── components.json                  # spartan-ng CLI config
+└── .postcssrc.json                  # Tailwind PostCSS plugin
+```
+
+**Why this split:**
+- `core/services/api/` holds thin, stateless HTTP wrappers — one file per concern (conversations, files, chat), the same separation of concerns as the backend modules. Nothing in them is specific to one screen.
+- `features/chat/data-access/` holds the stateful logic for the chat feature, kept next to the feature it belongs to rather than mixed into a shared services folder.
+- `features/chat/ui/` holds components that only take inputs and emit outputs. They never touch the store directly, which keeps them reusable and easy to reason about.
+
+### State management
+
+`ChatStoreService` is a signal-based store. There is no state management library, because the state is small (conversation ID, messages, uploaded files, a few loading flags) and Angular signals cover it.
+
+- State lives in private writable signals, exposed publicly as read-only signals. Components can read state but only change it through the store's methods (`startConversation`, `uploadFiles`, `askQuestion`).
+- Loading is tracked per action (`isStarting`, `isUploading`, `isAsking`) rather than with one global flag. This lets the UI disable just the input while an answer is loading without freezing the upload area. A `computed` `isBusy` combines them when needed.
+- **Optimistic updates with rollback:** when a question is sent, the user's message is shown immediately. If the request fails, it is removed again, because the backend only stores a message pair after a successful answer. Local and server state stay consistent.
+- Errors are caught in the store and exposed as a readable `error` signal, so components never need their own try/catch.
+
+### Components
+
+| Component | Role |
+|---|---|
+| `ChatShell` | The only component that injects the store. Lays out the page (header, upload area, messages, input) in a centered column and wires events to store methods. |
+| `FileUpload` | Click-to-browse and drag-and-drop upload, plus the list of uploaded files with chunk counts. |
+| `MessageList` | Scrollable thread that auto-scrolls to the latest message or typing indicator. |
+| `MessageBubble` | One message. User messages are sage and right-aligned, assistant messages are muted and left-aligned. |
+| `ChatInput` | Auto-growing textarea with the send button inside it. Enter sends, Shift+Enter adds a newline. |
+| `TypingIndicator` | Animated three-dot assistant bubble shown while an answer is loading, with reduced-motion support. |
+
+### Design system
+
+- **Palette:** a pastel sage theme defined as CSS variables in `oklch()` (hue 145): a softly tinted page background, white cards, and a muted coral for errors. Changing the hue angle retheme the whole app.
+- **Components:** spartan-ng's `nova` style. The styled component code is copied into `libs/ui/`, so it is owned by the repo and fully customizable rather than locked inside an npm package.
+- **Tailwind v4 notes:** it requires plain CSS, not SCSS, and `styles.css` contains an `@source "../libs"` directive so Tailwind scans the generated components outside `src/`.
+- **Typography:** Inter, loaded from Google Fonts with a system-font fallback.
+
+### Git workflow
+
+The backend was developed with direct commits to `main`. The frontend used feature branches merged through squash-merge pull requests, one per feature (`design-system`, `api-integration`, `chat-store`, `file-upload-ui`, `message-thread-ui`, `chat-input-ui`, `chat-shell`), which keeps the history on `main` readable.
+
+## Known limitations and possible next steps
+
+- Scanned (image-only) PDFs aren't supported, since text extraction needs OCR for those.
+- The Gemini API occasionally returns 503 during demand spikes. Retry with backoff in `GeminiService` would make this smoother.
+- One active conversation at a time: there is no conversation history browser, and conversations expire after 24h of inactivity.
+- Drag-and-drop works on the empty upload area. Once files are uploaded, more files are added through the button.
+- Only the light theme is tuned. The dark theme still uses the generated defaults.
+- The send button uses a text arrow. It could be swapped for a proper icon.
+- No automated tests yet.
